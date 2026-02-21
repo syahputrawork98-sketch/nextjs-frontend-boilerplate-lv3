@@ -1,10 +1,10 @@
-import { api } from "@/lib/api";
+import { api, authHeaders } from "@/lib/api";
 
-export default async function Home() {
+export default async function ProjectsPage() {
   const projects = await api.get("/projects", {
     query: { status: "execution", page: 1, limit: 10 },
     headers: {
-      Authorization: "Bearer dummy",
+      ...authHeaders("dummy"),
       Prefer: "example=sample",
     },
   });
@@ -14,7 +14,9 @@ export default async function Home() {
       <h1>Projects</h1>
       <ul>
         {projects.map((p) => (
-          <li key={p.id}>{p.name}</li>
+          <li key={p.id}>
+            {p.name} — {p.status}
+          </li>
         ))}
       </ul>
     </main>
