@@ -1,13 +1,24 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useRef, useState } from "react";
 import { ToastContext, type Toast } from "./toast-context";
+
+function createToastId(nextIdRef: React.MutableRefObject<number>): string {
+  const id = `toast_${nextIdRef.current}`;
+  nextIdRef.current += 1;
+  return id;
+}
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const nextIdRef = useRef(1);
+
+  const removeToast = (id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  };
 
   const addToast = (toast: Omit<Toast, "id">) => {
-    const id = Math.random().toString(36).substr(2, 9);
+    const id = createToastId(nextIdRef);
     const newToast: Toast = {
       ...toast,
       id,
@@ -16,16 +27,11 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
     setToasts((prev) => [...prev, newToast]);
 
-    // Auto remove after duration
     if (newToast.duration) {
       setTimeout(() => {
         removeToast(id);
       }, newToast.duration);
     }
-  };
-
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
   };
 
   return (

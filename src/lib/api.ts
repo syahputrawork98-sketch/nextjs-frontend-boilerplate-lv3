@@ -5,32 +5,48 @@ type ApiError = {
   message: string;
 };
 
+type JsonContent = {
+  content: {
+    "application/json": unknown;
+  };
+};
+
 const API_BASE_URL =
   process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:3001";
-  export function authHeaders(token?: string): HeadersInit {
+
+export function authHeaders(token?: string): HeadersInit {
   if (!token) return {};
   return { Authorization: `Bearer ${token}` };
 }
 
-
 type HttpMethod = "get" | "post" | "put" | "delete";
+type ParamPrimitive = string | number | boolean | null | undefined;
 
-type Operation<Path extends keyof paths, Method extends HttpMethod> =
-  paths[Path][Method];
+type Operation<Path extends keyof paths, Method extends HttpMethod> = paths[Path][Method];
+
+type ResponseFrom<R> = 200 extends keyof R
+  ? R[200] extends JsonContent
+    ? R[200]["content"]["application/json"]
+    : never
+  : 201 extends keyof R
+  ? R[201] extends JsonContent
+    ? R[201]["content"]["application/json"]
+    : never
+  : never;
 
 type ResponseJson<Path extends keyof paths, Method extends HttpMethod> =
   Operation<Path, Method> extends { responses: infer R }
-    ? R extends { 200: any }
-      ? R[200]["content"]["application/json"]
-      : R extends { 201: any }
-      ? R[201]["content"]["application/json"]
+    ? R extends Record<PropertyKey, unknown>
+      ? ResponseFrom<R>
       : never
     : never;
 
 type RequestBody<Path extends keyof paths, Method extends "post" | "put"> =
   Operation<Path, Method> extends { requestBody: infer B }
     ? B extends { content: infer C }
-      ? C["application/json"]
+      ? C extends { "application/json": infer V }
+        ? V
+        : never
       : never
     : never;
 
@@ -48,10 +64,42 @@ type QueryParams<Path extends keyof paths, Method extends HttpMethod> =
       : never
     : never;
 
+function toPathRecord(value: unknown): Record<string, string | number> | undefined {
+  if (!value || typeof value !== "object") return undefined;
+
+  const output: Record<string, string | number> = {};
+  for (const [key, rawValue] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof rawValue === "string" || typeof rawValue === "number") {
+      output[key] = rawValue;
+    }
+  }
+
+  return output;
+}
+
+function toQueryRecord(value: unknown): Record<string, ParamPrimitive> | undefined {
+  if (!value || typeof value !== "object") return undefined;
+
+  const output: Record<string, ParamPrimitive> = {};
+  for (const [key, rawValue] of Object.entries(value as Record<string, unknown>)) {
+    if (
+      rawValue === null ||
+      rawValue === undefined ||
+      typeof rawValue === "string" ||
+      typeof rawValue === "number" ||
+      typeof rawValue === "boolean"
+    ) {
+      output[key] = rawValue;
+    }
+  }
+
+  return output;
+}
+
 function buildUrl(
   path: string,
   pathParams?: Record<string, string | number>,
-  query?: Record<string, string | number | boolean | undefined>
+  query?: Record<string, ParamPrimitive>
 ) {
   let url = path;
 
@@ -63,14 +111,33 @@ function buildUrl(
 
   const queryString = query
     ? Object.entries(query)
-        .filter(([, v]) => v !== undefined)
+        .filter(([, value]) => value !== undefined && value !== null)
         .map(
-          ([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`
+          ([key, value]) =>
+            `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`
         )
         .join("&")
     : "";
 
   return queryString ? `${url}?${queryString}` : url;
+}
+
+function parseApiError(body: unknown, fallbackMessage: string): ApiError {
+  if (typeof body === "object" && body !== null && "error" in body) {
+    const error = (body as { error?: unknown }).error;
+    if (typeof error === "object" && error !== null) {
+      const code = (error as { code?: unknown }).code;
+      const message = (error as { message?: unknown }).message;
+      if (typeof code === "string" && typeof message === "string") {
+        return { code, message };
+      }
+    }
+  }
+
+  return {
+    code: "UNKNOWN_ERROR",
+    message: fallbackMessage,
+  };
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
@@ -83,17 +150,14 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   });
 
   if (!res.ok) {
-    let errBody: any = null;
+    let errBody: unknown = null;
     try {
       errBody = await res.json();
-    } catch (_) {}
+    } catch {
+      errBody = null;
+    }
 
-    const apiError: ApiError = errBody?.error ?? {
-      code: "UNKNOWN_ERROR",
-      message: res.statusText,
-    };
-
-    throw apiError;
+    throw parseApiError(errBody, res.statusText);
   }
 
   if (res.status === 204) {
@@ -112,7 +176,7 @@ export const api = {
       headers?: HeadersInit;
     }
   ) {
-    const url = buildUrl(path, params?.path as any, params?.query as any);
+    const url = buildUrl(path, toPathRecord(params?.path), toQueryRecord(params?.query));
     return request<ResponseJson<Path, "get">>(url, {
       method: "GET",
       headers: params?.headers,
@@ -128,7 +192,7 @@ export const api = {
       headers?: HeadersInit;
     }
   ) {
-    const url = buildUrl(path, params?.path as any, params?.query as any);
+    const url = buildUrl(path, toPathRecord(params?.path), toQueryRecord(params?.query));
     return request<ResponseJson<Path, "post">>(url, {
       method: "POST",
       body: JSON.stringify(body),
@@ -145,7 +209,7 @@ export const api = {
       headers?: HeadersInit;
     }
   ) {
-    const url = buildUrl(path, params?.path as any, params?.query as any);
+    const url = buildUrl(path, toPathRecord(params?.path), toQueryRecord(params?.query));
     return request<ResponseJson<Path, "put">>(url, {
       method: "PUT",
       body: JSON.stringify(body),
@@ -161,7 +225,7 @@ export const api = {
       headers?: HeadersInit;
     }
   ) {
-    const url = buildUrl(path, params?.path as any, params?.query as any);
+    const url = buildUrl(path, toPathRecord(params?.path), toQueryRecord(params?.query));
     return request<ResponseJson<Path, "delete">>(url, {
       method: "DELETE",
       headers: params?.headers,

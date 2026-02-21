@@ -13,22 +13,22 @@ function getErrorMessage(err: unknown): string {
   return "Unknown error";
 }
 
-export default async function SupplierDetailPage({ params }: PageProps) {
+export default async function ContractDetailPage({ params }: PageProps) {
   const result = await api
-    .get("/suppliers/{id}", {
+    .get("/contracts/{id}", {
       path: { id: params.id },
       headers: {
         ...authHeaders("dummy"),
         Prefer: "example=sample",
       },
     })
-    .then((supplier) => ({ supplier, error: null as string | null }))
-    .catch((err: unknown) => ({ supplier: null, error: getErrorMessage(err) }));
+    .then((contract) => ({ contract, error: null as string | null }))
+    .catch((err: unknown) => ({ contract: null, error: getErrorMessage(err) }));
 
   if (result.error) {
     return (
       <main style={{ padding: 24 }}>
-        <h1>Supplier Detail</h1>
+        <h1>Contract Detail</h1>
         <ErrorState message={result.error} />
       </main>
     );
@@ -36,10 +36,12 @@ export default async function SupplierDetailPage({ params }: PageProps) {
 
   return (
     <main style={{ padding: 24 }}>
-      <h1>Supplier Detail</h1>
-      <p>ID: {result.supplier?.id}</p>
-      <p>Name: {result.supplier?.name}</p>
-      <p>Email: {result.supplier?.contactEmail}</p>
+      <h1>Contract Detail</h1>
+      <p>ID: {result.contract?.id}</p>
+      <p>Project: {result.contract?.projectId}</p>
+      <p>Contractor: {result.contract?.contractorId}</p>
+      <p>Scope: {result.contract?.scope}</p>
+      <p>Signed At: {result.contract?.signedAt}</p>
     </main>
   );
 }

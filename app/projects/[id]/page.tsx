@@ -13,22 +13,22 @@ function getErrorMessage(err: unknown): string {
   return "Unknown error";
 }
 
-export default async function SupplierDetailPage({ params }: PageProps) {
+export default async function ProjectDetailPage({ params }: PageProps) {
   const result = await api
-    .get("/suppliers/{id}", {
+    .get("/projects/{id}", {
       path: { id: params.id },
       headers: {
         ...authHeaders("dummy"),
         Prefer: "example=sample",
       },
     })
-    .then((supplier) => ({ supplier, error: null as string | null }))
-    .catch((err: unknown) => ({ supplier: null, error: getErrorMessage(err) }));
+    .then((project) => ({ project, error: null as string | null }))
+    .catch((err: unknown) => ({ project: null, error: getErrorMessage(err) }));
 
   if (result.error) {
     return (
       <main style={{ padding: 24 }}>
-        <h1>Supplier Detail</h1>
+        <h1>Project Detail</h1>
         <ErrorState message={result.error} />
       </main>
     );
@@ -36,10 +36,12 @@ export default async function SupplierDetailPage({ params }: PageProps) {
 
   return (
     <main style={{ padding: 24 }}>
-      <h1>Supplier Detail</h1>
-      <p>ID: {result.supplier?.id}</p>
-      <p>Name: {result.supplier?.name}</p>
-      <p>Email: {result.supplier?.contactEmail}</p>
+      <h1>Project Detail</h1>
+      <p>ID: {result.project?.id}</p>
+      <p>Name: {result.project?.name}</p>
+      <p>Status: {result.project?.status}</p>
+      <p>Client: {result.project?.clientId}</p>
+      <p>Budget: {result.project?.budgetTotal}</p>
     </main>
   );
 }

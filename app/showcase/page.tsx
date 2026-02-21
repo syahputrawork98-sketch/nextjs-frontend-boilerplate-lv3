@@ -19,9 +19,6 @@ export default function ShowcasePage() {
   const { addToast } = useToast();
   const { isDark, toggleTheme } = useDarkMode();
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedValue, setSelectedValue] = useState("");
-  const [checkboxValue, setCheckboxValue] = useState(false);
-  const [radioValue, setRadioValue] = useState("");
 
   const countryOptions: SelectOption[] = [
     { value: "id", label: "Indonesia" },

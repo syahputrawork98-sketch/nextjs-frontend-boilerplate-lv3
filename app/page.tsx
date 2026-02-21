@@ -1,21 +1,22 @@
-import { api } from "@/lib/api";
+import Link from "next/link";
 
 export default async function Home() {
-  const projects = await api.get("/projects", {
-    query: { status: "execution", page: 1, limit: 10 },
-    headers: {
-      Authorization: "Bearer dummy",
-      Prefer: "example=sample",
-    },
-  });
-
   return (
     <main style={{ padding: 24 }}>
-      <h1>Projects</h1>
+      <h1>Project Management Demo</h1>
       <ul>
-        {projects.map((p) => (
-          <li key={p.id}>{p.name}</li>
-        ))}
+        <li>
+          <Link href="/projects">Projects</Link>
+        </li>
+        <li>
+          <Link href="/contracts">Contracts</Link>
+        </li>
+        <li>
+          <Link href="/clients">Clients</Link>
+        </li>
+        <li>
+          <Link href="/suppliers">Suppliers</Link>
+        </li>
       </ul>
     </main>
   );

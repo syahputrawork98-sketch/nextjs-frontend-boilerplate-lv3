@@ -1,4 +1,5 @@
 import { api, authHeaders } from "@/lib/api";
+import Link from "next/link";
 
 export default async function ProjectsPage() {
   const projects = await api.get("/projects", {
@@ -15,7 +16,7 @@ export default async function ProjectsPage() {
       <ul>
         {projects.map((p) => (
           <li key={p.id}>
-            {p.name} — {p.status}
+            <Link href={`/projects/${p.id}`}>{p.name}</Link> - {p.status}
           </li>
         ))}
       </ul>

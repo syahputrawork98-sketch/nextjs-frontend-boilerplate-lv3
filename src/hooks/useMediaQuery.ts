@@ -8,11 +8,13 @@ import { useEffect, useState } from "react";
  * @returns boolean - apakah query match
  */
 export function useMediaQuery(query: string): boolean {
-  const [matches, setMatches] = useState(false);
+  const [matches, setMatches] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.matchMedia(query).matches;
+  });
 
   useEffect(() => {
     const mediaQueryList = window.matchMedia(query);
-    setMatches(mediaQueryList.matches);
 
     const listener = (e: MediaQueryListEvent) => {
       setMatches(e.matches);
@@ -47,5 +49,5 @@ export function useIsTablet(): boolean {
 }
 
 export function useIsDesktop(): boolean {
-  return useMediaQuery(`(min-width: 1025px)`);
+  return useMediaQuery("(min-width: 1025px)");
 }

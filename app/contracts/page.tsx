@@ -1,4 +1,5 @@
 import { api, authHeaders } from "@/lib/api";
+import Link from "next/link";
 
 export default async function ContractsPage() {
   const contracts = await api.get("/contracts", {
@@ -15,7 +16,7 @@ export default async function ContractsPage() {
       <ul>
         {contracts.map((c) => (
           <li key={c.id}>
-            {c.scope} — {c.projectId}
+            <Link href={`/contracts/${c.id}`}>{c.scope}</Link> - {c.projectId}
           </li>
         ))}
       </ul>

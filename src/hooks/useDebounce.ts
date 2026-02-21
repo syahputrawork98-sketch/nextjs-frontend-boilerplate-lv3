@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
  * Hook untuk debounce value - delay update value sampai user selesai input
@@ -29,17 +29,20 @@ export function useDebounce<T>(value: T, delay: number = 500): T {
  * @param delay - delay dalam milliseconds
  * @returns throttledCallback - fungsi yang sudah di-throttle
  */
-export function useThrottle<T extends (...args: any[]) => any>(
-  callback: T,
+export function useThrottle<TArgs extends unknown[]>(
+  callback: (...args: TArgs) => void,
   delay: number = 500
-): T {
-  const [lastRun, setLastRun] = useState(Date.now());
+): (...args: TArgs) => void {
+  const lastRunRef = useRef(0);
 
-  return ((...args: any[]) => {
-    const now = Date.now();
-    if (now - lastRun >= delay) {
-      setLastRun(now);
-      callback(...args);
-    }
-  }) as T;
+  return useCallback(
+    (...args: TArgs) => {
+      const now = performance.now();
+      if (now - lastRunRef.current >= delay) {
+        lastRunRef.current = now;
+        callback(...args);
+      }
+    },
+    [callback, delay]
+  );
 }
