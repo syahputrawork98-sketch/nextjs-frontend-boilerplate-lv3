@@ -491,3 +491,8 @@ Tailwind CSS
 TypeScript
 🙏 Acknowledgments
 Built with ❤️ untuk tim kecil yang ingin produktif dan maintainable.
+## API Contract Docs
+
+- Detailed OpenAPI workflow (split docs): docs/api-contract/README.md
+
+
